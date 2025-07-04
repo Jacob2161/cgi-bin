@@ -1,5 +1,7 @@
 # cgi-bin
 
+See my blog post [Serving 200 million requests per day with a cgi-bin](https://jacob.gold/posts/serving-200-million-requests-with-cgi-bin/)
+
 ## apache
 
 ### Build the apache container
