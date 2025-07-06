@@ -1,1 +1,1 @@
-GET http://localhost:1111/~jakegold/cgi-bin/guestbook-CGI.cgi
+GET http://HOST:1111/~jakegold/cgi-bin/guestbook-CGI.cgi

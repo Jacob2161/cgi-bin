@@ -21,10 +21,13 @@ ARG PORT=1111
 ARG HTTP_LISTEN_ADDRESS=0.0.0.0:${PORT}
 ARG CGI_BIN_DIR=/home/jakegold/cgi-bin
 ARG CGI_URL_PREFIX=/~jakegold/cgi-bin
+ARG NODE_VERSION="24.3.0"
 
 # Install dependencies
 RUN apt-get update && apt-get install --yes --no-install-recommends \
   ca-certificates \
+  curl \
+  xz-utils \
   libsqlite3-0 \
   libsqlite3-dev \
   sqlite3 \
@@ -34,6 +37,13 @@ RUN apt-get update && apt-get install --yes --no-install-recommends \
   libdbd-sqlite3-perl \
   libcgi-pm-perl \
   && rm --recursive --force /var/lib/apt/lists/*
+
+# Install Node.js
+RUN curl --fail --silent --show-error --location \
+  "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+  | tar --extract --xz --directory /usr/local --strip-components=1
+
+RUN npm install --global sqlite3
 
 # Copy the gohttpd binary
 COPY --from=build-gohttpd /src/gohttpd /usr/local/bin/gohttpd
@@ -77,6 +87,12 @@ COPY \
   --from=guestbook-sh:latest \
   --chmod=755 /src/guestbook.cgi \
   /home/jakegold/cgi-bin/guestbook-sh.cgi
+
+# Copy guestbook-js.cgi
+COPY \
+  --from=guestbook-js:latest \
+  --chmod=755 /src/guestbook.cgi \
+  /home/jakegold/cgi-bin/guestbook-js.cgi
 
 ENV HTTP_LISTEN_ADDRESS=${HTTP_LISTEN_ADDRESS}
 ENV CGI_BIN_DIR=${CGI_BIN_DIR}

@@ -10,11 +10,29 @@ if [[ "${SERVER}" == "" ]]; then
   exit 1
 fi
 
+
+echo "WARNING: setting sysctl system parameters"
+sudo sysctl -w fs.file-max=2000000
+sudo sysctl -w fs.nr_open=2000000
+sudo sysctl -w kernel.pid_max=4194304
+sudo sysctl -w kernel.randomize_va_space=0
+
+echo "WARNING: setting kernel parameters."
+echo never | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+echo never | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
+
 docker run \
   --rm \
   --interactive \
   --tty \
   --name "${SERVER}" \
-  --memory 16G \
+  --memory 196GB \
+  --mount "type=tmpfs,destination=/tmp,tmpfs-size=1g,tmpfs-mode=1777" \
+  --sysctl kernel.msgmnb=65536 \
+  --sysctl kernel.msgmax=65536 \
+  --sysctl kernel.shmmax=1073741824 \
+  --sysctl kernel.shmall=262144 \
+  --ulimit nofile=1048576:1048576 \
+  --ulimit nproc=100000:100000 \
   --network host "webserver-${SERVER}:latest"
 

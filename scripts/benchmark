@@ -4,27 +4,42 @@ set -o nounset
 set -o pipefail
 
 VEGETA_DIR="vegeta"
-DURATION="10s"
-MAX_WORKERS="5000"
-CONNECTIONS="200"
-RATE_BASE="0"
-RATE_INCREMENT="100"
-#CGIS="$(cat "data/cgis")"
-CGIS="pl py go rs c"
+DURATION="15s"
+MAX_WORKERS="2500"
+CONNECTIONS="250"
+HOST="${1:-localhost}"
+CGIS="${2:-go}"
+RATE_BASE="${3:-3000}"
+RATE_INCREMENT="${4:-100}"
+
+# CGIS should be everything after $1
+if [[ "${HOST}" == "" ]]; then
+  echo "Usage: $0 <HOST> <CGIS> <BASE RATE>"
+  echo "Example: $0 example.com 'rs c go'"
+  exit 1
+fi
 
 # Set the maximum number of open files to something high.
 ulimit -n 50000
 
+echo "Starting Vegeta benchmark CGIs [${CGIS}] on ${HOST}..."
+
 # Clear the results directory
 mkdir --parents "${VEGETA_DIR}/results"
-find "${VEGETA_DIR}/results" -type f -name "*.bin" -delete
 
 for CGI in ${CGIS}; do
+  echo "Clearing previous results ${CGI}..."
+  find "${VEGETA_DIR}/results" -type f -name "*.${CGI}.*" -exec rm --verbose {} +
+
   echo "Warming with quick read ${CGI}..."
-  cat ${VEGETA_DIR}/reads.targets | sed "s/CGI/${CGI}/g" | \
-  vegeta attack \
-    --rate 1 \
-    --duration 1s \
+  cat ${VEGETA_DIR}/reads.targets \
+  | sed "s/CGI/${CGI}/g" \
+  | sed "s/HOST/${HOST}/g" \
+  | vegeta attack \
+    --rate "${RATE_BASE}" \
+    --connections "${CONNECTIONS}" \
+    --max-workers "${MAX_WORKERS}" \
+    --duration 2s \
     >/dev/null
 
   for i in $(seq 1 1000); do
@@ -37,8 +52,10 @@ for CGI in ${CGIS}; do
 
     PLOT_FILE="${VEGETA_DIR}/results/writes.${CGI}.${RATE}.html"
 
-    cat ${VEGETA_DIR}/writes.targets | sed "s/CGI/${CGI}/g" | \
-    vegeta attack \
+    cat ${VEGETA_DIR}/writes.targets \
+    | sed "s/CGI/${CGI}/g" \
+    | sed "s/HOST/${HOST}/g" \
+    | vegeta attack \
       --name "writes-${CGI}-${RATE}" \
       --rate "${RATE}" \
       --duration "${DURATION}" \
@@ -72,10 +89,7 @@ for CGI in ${CGIS}; do
     fi
 
     echo "Success rate for ${CGI} at ${RATE} req/s is 100%"
-    ln --symbolic --force "${REPORT_TEXT_FILE}" "${VEGETA_DIR}/results/writes.${CGI}.latest.txt"
-    ln --symbolic --force "${REPORT_JSON_FILE}" "${VEGETA_DIR}/results/writes.${CGI}.latest.json"
-    ln --symbolic --force "${PLOT_FILE}" "${VEGETA_DIR}/results/writes.${CGI}.latest.html"
-
     echo
+    sleep 2
   done
 done

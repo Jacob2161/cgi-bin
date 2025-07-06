@@ -94,3 +94,4 @@ perl5/
 
 # Vegeta
 vegeta/results/*.bin
+guestbook-rs/target/
