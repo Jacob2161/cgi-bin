@@ -4,30 +4,22 @@ See my blog post [Serving 200 million requests per day with a cgi-bin](https://j
 
 ## apache
 
-### Build the apache container
+### Build all of the required containers
 
 ```bash
-docker build --tag guestbook:apache --file Dockerfile.apache .
+scripts/build
 ```
 
-### Run the apache container
+## Run the gohttpd container
 
 ```bash
-docker run --rm -it --network host guestbook:apache
+scripts/run gohttpd
 ```
 
-## gohttpd
-
-### Build the gohttpd container
+## Run the apache container
 
 ```bash
-docker build --tag guestbook:gohttpd --file Dockerfile.gohttpd .
-```
-
-### Run the gohttpd container
-
-```bash
-docker run --rm -it --network host guestbook:gohttpd
+scripts/run apache
 ```
 
 ## Benchmark writes
@@ -39,7 +31,15 @@ plow \
   --content "application/x-www-form-urlencoded" \
   --concurrency 16 \
   --requests 100000 \
-    http://localhost:1111/~jakegold/cgi-bin/guestbook.cgi
+    http://localhost:1111/~jakegold/cgi-bin/guestbook-go.cgi
+
+plow \
+  --method POST \
+  --body "name=John+Carmack&message=Hello+from+id+software%21" \
+  --content "application/x-www-form-urlencoded" \
+  --concurrency 16 \
+  --requests 100000 \
+    http://localhost:1111/~jakegold/cgi-bin/guestbook-rs.cgi
 ```
 
 ## Benchmark reads
@@ -49,5 +49,11 @@ plow \
   --method GET \
   --concurrency 16 \
   --requests 100000 \
-    http://localhost:1111/~jakegold/cgi-bin/guestbook.cgi
+    http://localhost:1111/~jakegold/cgi-bin/guestbook-go.cgi
+
+plow \
+  --method GET \
+  --concurrency 16 \
+  --requests 100000 \
+    http://localhost:1111/~jakegold/cgi-bin/guestbook-rs.cgi
 ```

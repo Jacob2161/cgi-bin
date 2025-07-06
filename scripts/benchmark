@@ -1,0 +1,81 @@
+#!/bin/bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+VEGETA_DIR="vegeta"
+DURATION="10s"
+MAX_WORKERS="5000"
+CONNECTIONS="200"
+RATE_BASE="0"
+RATE_INCREMENT="100"
+#CGIS="$(cat "data/cgis")"
+CGIS="pl py go rs c"
+
+# Set the maximum number of open files to something high.
+ulimit -n 50000
+
+# Clear the results directory
+mkdir --parents "${VEGETA_DIR}/results"
+find "${VEGETA_DIR}/results" -type f -name "*.bin" -delete
+
+for CGI in ${CGIS}; do
+  echo "Warming with quick read ${CGI}..."
+  cat ${VEGETA_DIR}/reads.targets | sed "s/CGI/${CGI}/g" | \
+  vegeta attack \
+    --rate 1 \
+    --duration 1s \
+    >/dev/null
+
+  for i in $(seq 1 1000); do
+    RATE=$((RATE_BASE + (i * RATE_INCREMENT)))
+    echo "Benchmarking for ${CGI} at rate ${RATE} req/s..."
+
+    OUTPUT_FILE="${VEGETA_DIR}/results/writes.${CGI}.${RATE}.bin"
+    REPORT_TEXT_FILE="${VEGETA_DIR}/results/writes.${CGI}.${RATE}.txt"
+    REPORT_JSON_FILE="${VEGETA_DIR}/results/writes.${CGI}.${RATE}.json"
+
+    PLOT_FILE="${VEGETA_DIR}/results/writes.${CGI}.${RATE}.html"
+
+    cat ${VEGETA_DIR}/writes.targets | sed "s/CGI/${CGI}/g" | \
+    vegeta attack \
+      --name "writes-${CGI}-${RATE}" \
+      --rate "${RATE}" \
+      --duration "${DURATION}" \
+      --connections "${CONNECTIONS}" \
+      --timeout 5s \
+      --max-workers "${MAX_WORKERS}" \
+      --output "${OUTPUT_FILE}"
+
+    echo "Generating text report for ${CGI} at rate ${RATE} req/s..."
+    vegeta report \
+      --type text \
+      --output "${REPORT_TEXT_FILE}" \
+      "${OUTPUT_FILE}"
+
+    echo "Generating JSON report for ${CGI} at rate ${RATE} req/s..."
+    vegeta report \
+      --type json \
+      --output "${REPORT_JSON_FILE}" \
+      "${OUTPUT_FILE}"
+
+    echo "Generating plot for ${CGI} at rate ${RATE} req/s..."
+    vegeta plot \
+      --title "${CGI} ${RATE} req/s Writes" \
+      < "${OUTPUT_FILE}" >"${PLOT_FILE}"
+    
+    SUCCESS_PERCENT="$(jq --raw-output .success < "${REPORT_JSON_FILE}")"
+    if [[ "${SUCCESS_PERCENT}" != "1" ]]; then
+      echo "Success rate for ${CGI} at ${RATE} req/s is ${SUCCESS_PERCENT}% so skipping further tests."
+      echo
+      break
+    fi
+
+    echo "Success rate for ${CGI} at ${RATE} req/s is 100%"
+    ln --symbolic --force "${REPORT_TEXT_FILE}" "${VEGETA_DIR}/results/writes.${CGI}.latest.txt"
+    ln --symbolic --force "${REPORT_JSON_FILE}" "${VEGETA_DIR}/results/writes.${CGI}.latest.json"
+    ln --symbolic --force "${PLOT_FILE}" "${VEGETA_DIR}/results/writes.${CGI}.latest.html"
+
+    echo
+  done
+done

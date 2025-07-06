@@ -34,7 +34,7 @@ type page struct {
 }
 
 const (
-	databaseFile = "/tmp/guestbook.db"
+	databaseFile = "/tmp/guestbook-go.db"
 )
 
 var (

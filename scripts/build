@@ -1,0 +1,14 @@
+#!/bin/bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Build the CGI programs
+for CGI in $(cat data/cgis); do
+  docker build --tag "guestbook-${CGI}:latest" --file "guestbook-${CGI}/Dockerfile" .
+done
+
+# Build the web servers
+for SERVER in $(cat data/servers); do
+  docker build --tag "webserver-${SERVER}:latest" --file "${SERVER}/Dockerfile" .
+done
