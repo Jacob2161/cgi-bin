@@ -24,36 +24,7 @@ scripts/run apache
 
 ## Benchmark writes
 
-```bash
-plow \
-  --method POST \
-  --body "name=John+Carmack&message=Hello+from+id+software%21" \
-  --content "application/x-www-form-urlencoded" \
-  --concurrency 16 \
-  --requests 100000 \
-    http://localhost:1111/~jakegold/cgi-bin/guestbook-go.cgi
-
-plow \
-  --method POST \
-  --body "name=John+Carmack&message=Hello+from+id+software%21" \
-  --content "application/x-www-form-urlencoded" \
-  --concurrency 16 \
-  --requests 100000 \
-    http://localhost:1111/~jakegold/cgi-bin/guestbook-rs.cgi
-```
-
-## Benchmark reads
 
 ```bash
-plow \
-  --method GET \
-  --concurrency 16 \
-  --requests 100000 \
-    http://localhost:1111/~jakegold/cgi-bin/guestbook-go.cgi
-
-plow \
-  --method GET \
-  --concurrency 16 \
-  --requests 100000 \
-    http://localhost:1111/~jakegold/cgi-bin/guestbook-rs.cgi
+scripts/benchmark localhost go 3000 100
 ```
