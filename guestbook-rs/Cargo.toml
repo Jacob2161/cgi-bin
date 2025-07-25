@@ -12,3 +12,7 @@ cgi = "0.8.0"
 html-escape = "0.2.13"
 rusqlite = "0.36.0"
 url = "2.5.4"
+
+[profile.release]
+codegen-units = 1
+lto = true
