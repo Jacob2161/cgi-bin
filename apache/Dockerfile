@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install --yes --no-install-recommends \
   libdbi-perl \
   libdbd-sqlite3-perl \
   libcgi-pm-perl \
+  libglib2.0-0 \
   && rm --recursive --force /var/lib/apt/lists/*
 ARG NODE_VERSION="24.3.0"
 
@@ -68,5 +69,11 @@ COPY \
   --from=guestbook-sh:latest \
   --chmod=755 /src/guestbook.cgi \
   /usr/local/apache2/htdocs/~jakegold/cgi-bin/guestbook-sh.cgi
+
+# Copy guestbook-vala.cgi
+COPY \
+  --from=guestbook-vala:latest \
+  --chmod=755 /src/guestbook.cgi \
+  /usr/local/apache2/htdocs/~jakegold/cgi-bin/guestbook-vala.cgi
 
 EXPOSE ${PORT}

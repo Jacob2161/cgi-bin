@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install --yes --no-install-recommends \
   libdbi-perl \
   libdbd-sqlite3-perl \
   libcgi-pm-perl \
+  libglib2.0-0 \
   && rm --recursive --force /var/lib/apt/lists/*
 
 # Install Node.js
@@ -93,6 +94,12 @@ COPY \
   --from=guestbook-js:latest \
   --chmod=755 /src/guestbook.cgi \
   /home/jakegold/cgi-bin/guestbook-js.cgi
+
+# Copy guestbook-vala.cgi
+COPY \
+  --from=guestbook-vala:latest \
+  --chmod=755 /src/guestbook.cgi \
+  /home/jakegold/cgi-bin/guestbook-vala.cgi
 
 ENV HTTP_LISTEN_ADDRESS=${HTTP_LISTEN_ADDRESS}
 ENV CGI_BIN_DIR=${CGI_BIN_DIR}
